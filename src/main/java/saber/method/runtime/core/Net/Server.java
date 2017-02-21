@@ -1,4 +1,4 @@
-package saber.method.runtime;
+package saber.method.runtime.core.net;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,45 +16,45 @@ import java.util.concurrent.ThreadFactory;
 /**
  * Created by baipeng on 2017/2/18.
  */
-public class SimpleServer {
+public class Server<RequestMsg, ResponseMsg> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleServer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
     private volatile boolean isRunning = true;
 
-    private int port;
-    private String ip;
+    private ServerConfig<RequestMsg, ResponseMsg> serverConfig;
 
     private Selector selector;
     private ServerSocketChannel serverChannel;
 
     private ExecutorService singleThreadExecutor;
 
-    public SimpleServer(String ip, int port) {
-        this.port = port;
-        if (ip == null || ip.isEmpty()) {
-            ip = "0.0.0.0";
-        }
-        this.ip = ip;
-
-        singleThreadExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
-            public Thread newThread(Runnable r) {
-                Thread t = new Thread(r);
-                t.setDaemon(true);
-                t.setName("SimpleServer:" + this.toString());
-                return t;
-            }
-        });
+    public Server(ServerConfig<RequestMsg, ResponseMsg> serverConfig) {
+        this.serverConfig = serverConfig;
     }
 
     public boolean start() {
         try {
+            String ip = serverConfig.getIp();
+            if (ip == null || ip.isEmpty()) {
+                ip = "0.0.0.0";
+            }
+
             selector = Selector.open();
 
             serverChannel = ServerSocketChannel.open();
-            serverChannel.socket().bind(new InetSocketAddress(InetAddress.getByName(ip), port));
+            serverChannel.socket().bind(new InetSocketAddress(InetAddress.getByName(ip), serverConfig.getPort()));
             serverChannel.configureBlocking(false);
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+            singleThreadExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+                public Thread newThread(Runnable r) {
+                    Thread t = new Thread(r);
+                    t.setDaemon(true);
+                    t.setName("server_port:" + serverConfig.getPort());
+                    return t;
+                }
+            });
 
             singleThreadExecutor.execute(new Runnable() {
                 public void run() {
@@ -83,18 +83,18 @@ public class SimpleServer {
                     if (key.isAcceptable()) {
                         SocketChannel client = serverChannel.accept();
                         client.configureBlocking(false);
-                        client.register(selector, SelectionKey.OP_READ,null);
+                        client.register(selector, SelectionKey.OP_READ, new Session(client, serverConfig.buildDecoder(),serverConfig.buildEncoder(),serverConfig.buildProcessor()));
                         LOGGER.info("A new connection,client:" + client.socket().toString());
                         keyIterator.remove();
                     } else if (key.isReadable()) {
-                        A a = (A) key.attachment();
+                        Session a = (Session) key.attachment();
                         if (a.readToBuf()) {
                             keyIterator.remove();
                         }
                     }
                 }
 
-            } catch (IOException e) {
+            } catch (Exception e) {
                 LOGGER.error("Server select error.listen address:" + this.toString() + ",error:", e);
             }
         }
@@ -111,6 +111,6 @@ public class SimpleServer {
 
     @Override
     public String toString() {
-        return String.format("ip:%s,port:%s", ip, port);
+        return String.format("ip:%s,port:%s", serverConfig.getIp(), serverConfig.getPort());
     }
 }
