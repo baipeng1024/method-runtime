@@ -25,7 +25,7 @@ public class HttpDecoder implements IMsgDecoder<HttpRequest> {
         }
     }
 
-    //TODO:待解析charset信息,默认使用UTF-8
+
     public HttpRequest nextFrame() {
         int postStrIndex = msg.indexOf("\r\n\r\n");
         if (postStrIndex < 0) {
@@ -80,6 +80,7 @@ public class HttpDecoder implements IMsgDecoder<HttpRequest> {
         if (contentIndex < msg.length()) {
             request.setPostPars(getKVPars(msg.substring(contentIndex)));
         }
+        msg.delete(0,msg.length());
         return request;
     }
 

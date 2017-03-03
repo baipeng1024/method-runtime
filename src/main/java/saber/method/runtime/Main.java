@@ -17,7 +17,7 @@ public class Main {
         ServerConfig httpServerConf = new ServerConfig("127.0.0.1", 20000, HttpDecoder.class, HttpEncoder.class,SysFunProcessor.class);
         Server server = new Server(httpServerConf);
         server.start();
-        Thread.sleep(100000);
+        Thread.sleep(10000000);
     }
 
 }
