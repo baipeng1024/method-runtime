@@ -27,13 +27,12 @@ public class Server<RequestMsg, ResponseMsg> {
     private Selector selector;
     private ServerSocketChannel serverChannel;
 
-    private ExecutorService singleThreadExecutor;
-
     public Server(ServerConfig<RequestMsg, ResponseMsg> serverConfig) {
         this.serverConfig = serverConfig;
     }
 
-    public boolean start() {
+
+    public void start() {
         try {
             String ip = serverConfig.getIp();
             if (ip == null || ip.isEmpty()) {
@@ -47,25 +46,11 @@ public class Server<RequestMsg, ResponseMsg> {
             serverChannel.configureBlocking(false);
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-            singleThreadExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
-                public Thread newThread(Runnable r) {
-                    Thread t = new Thread(r);
-                    t.setDaemon(true);
-                    t.setName("server_port:" + serverConfig.getPort());
-                    return t;
-                }
-            });
-
-            singleThreadExecutor.execute(new Runnable() {
-                public void run() {
-                    loop();
-                }
-            });
             LOGGER.info("Server start ok,listen address:" + this.toString());
+            loop();
         } catch (IOException e) {
             LOGGER.error("Server start error.listen address:" + this.toString(), e);
         }
-        return false;
     }
 
     public void stop() {
@@ -83,7 +68,7 @@ public class Server<RequestMsg, ResponseMsg> {
                     if (key.isAcceptable()) {
                         SocketChannel client = serverChannel.accept();
                         client.configureBlocking(false);
-                        client.register(selector, SelectionKey.OP_READ, new Session(client, serverConfig.buildDecoder(),serverConfig.buildEncoder(),serverConfig.buildProcessor()));
+                        client.register(selector, SelectionKey.OP_READ, new Session(client, serverConfig.buildDecoder(), serverConfig.buildEncoder(), serverConfig.buildProcessor()));
                         LOGGER.info("A new connection,client:" + client.socket().toString());
                         keyIterator.remove();
                     } else if (key.isReadable()) {
@@ -105,7 +90,8 @@ public class Server<RequestMsg, ResponseMsg> {
         } catch (IOException e) {
 
         }
-        singleThreadExecutor.shutdown();
+
+        LOGGER.info("Server has stopped.");
     }
 
 

@@ -1,22 +1,17 @@
 package saber.method.runtime;
 
 import com.alibaba.fastjson.JSON;
+import saber.method.runtime.core.net.IProcessor;
 import saber.method.runtime.core.net.http.HttpRequest;
 import saber.method.runtime.core.net.http.HttpResponse;
-import saber.method.runtime.core.net.IProcessor;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Created by baipeng on 2017/2/21.
@@ -132,11 +127,5 @@ public class SysFunProcessor implements IProcessor<HttpRequest, HttpResponse> {
 
     }
 
-    private Class loadClass(String name) throws ClassNotFoundException, MalformedURLException {
-        File file = new File("c:\\myjar.jar");
-        URL[] urls = new URL[]{file.toURI().toURL()};
-        ClassLoader cl = new URLClassLoader(urls);
-        return cl.loadClass(name);
-    }
 
 }
